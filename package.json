@@ -1,0 +1,22 @@
+{
+  "name": "drug_database",
+  "version": "1.0.0",
+  "description": "drug database",
+  "main": "index.js",
+  "scripts": {
+    "test": "testc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yiheng-Gao/drug_database.git"
+  },
+  "keywords": [
+    "drugkeywords"
+  ],
+  "author": "Yiheng Gao",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Yiheng-Gao/drug_database/issues"
+  },
+  "homepage": "https://github.com/Yiheng-Gao/drug_database#readme"
+}
