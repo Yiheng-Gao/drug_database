@@ -1,0 +1,63 @@
+/* Existing styles for tooltips, chart titles, etc. */
+.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 6px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  
+  .chart-title,
+  .source-credit {
+    font-family: sans-serif;
+  }
+  
+  #main-container {
+    display: flex;
+  }
+  
+  #right-container {
+    width: 400px; /* Adjust as needed */
+    display: flex;
+    flex-direction: column;
+    margin-right: 700px; /* Space between right-container and chart */
+    margin-top: 100px;
+  }
+  
+  #form-container {
+    margin-bottom: 20px;
+  }
+
+  #slider-container {
+    /* Additional styles if needed */
+    width: 400px;
+    overflow: visible;
+  }
+  
+ 
+  
+  #chart-container {
+    flex: 1;
+    margin-left: 1px;
+    /* Remove margin-left if present */
+  }
+  
+  /* Media queries for responsiveness */
+  @media screen and (max-width: 1000px) {
+    #main-container {
+      flex-direction: column;
+    }
+  
+    #chart-container,
+    #right-container {
+      width: 100%;
+      margin-right: 0;
+    }
+  
+    #chart-container {
+      margin-top: 20px;
+    }
+  }

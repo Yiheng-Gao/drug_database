@@ -4,22 +4,50 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { sliderBottom } from 'd3-simple-slider'; // Import the slider module
+import './page.css';
+import { Button, Form, Input, Select, Space } from 'antd';
 
 interface DateCount {
   date: string; // Original date string from BigQuery
   count: number;
 }
 
+const { Option } = Select;
+
+const layout = {
+  labelCol: { span: 8 },
+  wrapperCol: { span: 16 },
+};
+
+const tailLayout = {
+  wrapperCol: { offset: 8, span: 16 },
+};
+
 export default function Home() {
   const d3Container = useRef<HTMLDivElement | null>(null);
+  const sliderContainer = useRef<HTMLDivElement | null>(null);
+  const [form] = Form.useForm();
+
+  const onCategoryChange = (value: string) => {
+    switch (value) {
+      case 'Opioid':
+        break;
+      case 'Stimulant':
+        break;
+      default:
+    }
+  };
 
   useEffect(() => {
+
+    
     // Capture the current value of the ref
     const container = d3Container.current;
+    const sliderDiv = sliderContainer.current;
 
     // If the container is not available, exit early
-    if (!container) {
-      console.error('D3 container is not available.');
+    if (!container || !sliderDiv) {
+      console.error('D3 container or slider container is not available.');
       return;
     }
 
@@ -40,8 +68,8 @@ export default function Home() {
 
         // Set up dimensions and margins
         const margin = { top: 70, right: 60, bottom: 100, left: 80 };
-        const width = 1600 - margin.left - margin.right;
-        const height = 800 - margin.top - margin.bottom;
+        const width = 1000 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
 
         // Parse the date / time
         const parseDate = d3.timeParse('%Y-%m-%d'); // Adjust format based on your date format
@@ -179,15 +207,15 @@ export default function Home() {
           // Update tooltip positions and content
           tooltipX
             .style("left", (event.pageX) + "px")
-            .style("top", (730) + "px")
+            .style("top", (height+100) + "px")
             .html(`Date: ${d3.timeFormat("%Y-%m-%d")(selectedData.date)}`)
             .transition()
             .duration(50)
             .style("opacity", 1);
 
           tooltipY
-            .style("left", 1550 + "px")
-            .style("top", (event.pageY - 28) + "px")
+            .style("left", (width+40) + "px")
+            .style("top", (event.pageY) + "px")
             .html(`Count: ${selectedData.count}`)
             .transition()
             .duration(50)
@@ -232,12 +260,15 @@ export default function Home() {
             .style("opacity", 0);
         }
 
+          
+     
+
         // Define the slider
         const slider = sliderBottom<Date>()
           .min(d3.min(formattedData, d => d.date) as Date)
           .max(d3.max(formattedData, d => d.date) as Date)
-          .width(300)
-          .tickFormat(d3.timeFormat('%Y-%m-%d'))
+          .width(400)
+          .tickFormat(d3.timeFormat('%Y'))
           .ticks(5)
           .default([d3.min(formattedData, d => d.date) as Date, d3.max(formattedData, d => d.date) as Date])
           .fill('#85bb65');
@@ -287,13 +318,13 @@ export default function Home() {
             
           
 
-        // Append the slider to the DOM
-        const sliderGroup = d3.select(container)
+        const sliderSvg = d3.select(sliderDiv)
           .append('svg')
-          .attr('width', width + margin.left + margin.right)
-          .attr('height',height + margin.top + margin.bottom)
-          .append('g')
-          .attr('transform', `translate(${margin.left},${margin.top})`);
+          .attr('width', 500)
+          .attr('height', 100);
+        // Append the slider to the DOM
+        const sliderGroup = sliderSvg.append('g')
+          .attr('transform', 'translate(30,30)');
 
         sliderGroup.call(slider as any);
 
@@ -315,7 +346,6 @@ export default function Home() {
           .style("text-anchor", "end")
           .style("font-size", "12px")
           .style("fill", "#777")
-          .text("Source: Your Data Source");
 
       } catch (error) {
         console.error('Error fetching or rendering data:', error);
@@ -327,48 +357,47 @@ export default function Home() {
     // Cleanup function to remove SVG and tooltips on unmount
     return () => {
       if (container) {
-        d3.select(container).select('svg').remove();
-        d3.select("body").selectAll(".tooltip").remove();
+        d3.select(container).selectAll('svg').remove();
       }
+      if (sliderDiv) {
+        d3.select(sliderDiv).selectAll('svg').remove();
+      }
+      d3.select('body').selectAll('.tooltip').remove();
     };
   }, []); // Empty dependency array ensures this runs once on mount
 
   return (
-    <div>
+    <div id="main-container">
       <div ref={d3Container} id="chart-container"></div>
-      {/* Slider will be appended inside the chart-container div */}
-      <style jsx>{`
-        .tooltip {
-          position: absolute;
-          text-align: center;
-          padding: 6px;
-          font: 12px sans-serif;
-          background: lightsteelblue;
-          border: 0px;
-          border-radius: 4px;
-          pointer-events: none;
-        }
-
-        .tooltip-x {
-          /* Additional styling if needed */
-        }
-
-        .tooltip-y {
-          /* Additional styling if needed */
-        }
-
-        .tooltip-line {
-          pointer-events: none;
-        }
-
-        .chart-title {
-          font-family: sans-serif;
-        }
-
-        .source-credit {
-          font-family: sans-serif;
-        }
-      `}</style>
+      <div id="right-container">
+        <div id="form-container">
+          <Form
+            {...layout}
+            form={form}
+            name="control-hooks"
+            style={{ maxWidth: 400 }}
+          >
+            <Form.Item name="Category" label="Category" rules={[{ required: true }]}>
+              <Select
+                placeholder="Select an option"
+                onChange={onCategoryChange}
+                allowClear
+              >
+                <Option value="Opioid">Opioid</Option>
+                <Option value="Stimulant">Stimulant</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item {...tailLayout}>
+              <Space>
+                <Button type="primary" htmlType="submit">
+                  Submit
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </div>
+        <div id="slider-container" ref={sliderContainer}></div>
+      </div>
     </div>
   );
 }
