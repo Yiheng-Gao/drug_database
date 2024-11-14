@@ -17,6 +17,7 @@
   
   #main-container {
     display: flex;
+    margin-top: 20px;
   }
   
   #right-container {
@@ -42,6 +43,7 @@
   #chart-container {
     flex: 1;
     margin-left: 1px;
+    margin-top: 50px;
     /* Remove margin-left if present */
   }
   

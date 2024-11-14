@@ -1,7 +1,7 @@
 /* eslint-disable */
 'use client'
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { sliderBottom } from 'd3-simple-slider'; // Import the slider module
 import './page.css';
@@ -28,15 +28,25 @@ export default function Home() {
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const [form] = Form.useForm();
 
-  const onCategoryChange = (value: string) => {
-    switch (value) {
-      case 'Opioid':
-        break;
-      case 'Stimulant':
-        break;
-      default:
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [data, setData]=useState<DateCount[]>([]);
+
+  const onFinish = (values: any)=>{
+    const category = values.Category;
+    if(category){
+      setSelectedCategory(category);
     }
-  };
+  }
+
+  // const onCategoryChange = (value: string) => {
+  //   switch (value) {
+  //     case 'Opioid':
+  //       break;
+  //     case 'Stimulant':
+  //       break;
+  //     default:
+  //   }
+  // };
 
   useEffect(() => {
 
@@ -52,20 +62,55 @@ export default function Home() {
     }
 
     // Define an async function to fetch and render data
-    const fetchDataAndRender = async () => {
+    const fetchData = async (category: string | null) => {
       try {
         // Fetch data from the provided URL
-        const response = await fetch('https://get-date-count-jotf3wno6q-uc.a.run.app');
+        let url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
+        if(category&&category!='All'){
+          url=`https://get-category-count-jotf3wno6q-uc.a.run.app/?category=${encodeURIComponent(category)}`;
+        }else{
+          let url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
+        }
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        const data: DateCount[] = await response.json();
+        const fetchedData: DateCount[] = await response.json();
 
-        if (!data || data.length === 0) {
+        if (!fetchedData || fetchedData.length === 0) {
           console.error('No data received from the Cloud Function.');
           return;
         }
+        setData(fetchedData);
+      }
+      catch (error) {
+        console.error('Error fetching or rendering data:', error);
+      }
+    };
 
+    if(selectedCategory!==null){
+      fetchData(selectedCategory);
+    }else{
+      fetchData(null);
+    }
+  },[selectedCategory]);
+
+  useEffect(()=>{
+    if(!data||data.length===0) return;
+
+        // Capture the current value of the ref
+        const container = d3Container.current;
+        const sliderDiv = sliderContainer.current;
+    
+        // If the container is not available, exit early
+        if (!container || !sliderDiv) {
+          console.error('D3 container or slider container is not available.');
+          return;
+        }
+            // Remove any existing SVG to prevent duplicates
+        d3.select(container).selectAll('svg').remove();
+        d3.select(sliderDiv).selectAll('svg').remove();
+        d3.select('body').selectAll('.tooltip').remove();
         // Set up dimensions and margins
         const margin = { top: 70, right: 60, bottom: 100, left: 80 };
         const width = 1000 - margin.left - margin.right;
@@ -85,8 +130,6 @@ export default function Home() {
           return;
         }
 
-        // Remove any existing SVG to prevent duplicates
-        d3.select(container).select('svg').remove();
 
         // Set up scales
         const xDomain = d3.extent(formattedData, (d) => d.date);
@@ -338,33 +381,8 @@ export default function Home() {
           .style("font-weight", "bold")
           .text("Number of Tests Per Day");
 
-        // Add source credit
-        svg.append("text")
-          .attr("class", "source-credit")
-          .attr("x", width)
-          .attr("y", height + 40)
-          .style("text-anchor", "end")
-          .style("font-size", "12px")
-          .style("fill", "#777")
-
-      } catch (error) {
-        console.error('Error fetching or rendering data:', error);
-      }
-    };
-
-    fetchDataAndRender();
-
-    // Cleanup function to remove SVG and tooltips on unmount
-    return () => {
-      if (container) {
-        d3.select(container).selectAll('svg').remove();
-      }
-      if (sliderDiv) {
-        d3.select(sliderDiv).selectAll('svg').remove();
-      }
-      d3.select('body').selectAll('.tooltip').remove();
-    };
-  }, []); // Empty dependency array ensures this runs once on mount
+      
+  }, [data]); 
 
   return (
     <div id="main-container">
@@ -376,15 +394,16 @@ export default function Home() {
             form={form}
             name="control-hooks"
             style={{ maxWidth: 400 }}
+            onFinish={onFinish}
           >
             <Form.Item name="Category" label="Category" rules={[{ required: true }]}>
               <Select
                 placeholder="Select an option"
-                onChange={onCategoryChange}
                 allowClear
               >
                 <Option value="Opioid">Opioid</Option>
                 <Option value="Stimulant">Stimulant</Option>
+                <Option value="All">All Category</Option>
               </Select>
             </Form.Item>
             <Form.Item {...tailLayout}>
