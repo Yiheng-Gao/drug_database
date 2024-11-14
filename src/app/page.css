@@ -17,14 +17,14 @@
   
   #main-container {
     display: flex;
-    margin-top: 20px;
+    margin-top: 10px;
   }
   
   #right-container {
-    width: 400px; /* Adjust as needed */
+    width: 300px; /* Adjust as needed */
     display: flex;
     flex-direction: column;
-    margin-right: 700px; /* Space between right-container and chart */
+    margin-right: 800px; /* Space between right-container and chart */
     margin-top: 100px;
   }
   
@@ -44,11 +44,12 @@
     flex: 1;
     margin-left: 1px;
     margin-top: 50px;
+
     /* Remove margin-left if present */
   }
   
   /* Media queries for responsiveness */
-  @media screen and (max-width: 1000px) {
+  @media screen and (max-width: 1200px) {
     #main-container {
       flex-direction: column;
     }

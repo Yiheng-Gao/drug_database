@@ -113,8 +113,8 @@ export default function Home() {
         d3.select('body').selectAll('.tooltip').remove();
         // Set up dimensions and margins
         const margin = { top: 70, right: 60, bottom: 100, left: 80 };
-        const width = 1000 - margin.left - margin.right;
-        const height = 600 - margin.top - margin.bottom;
+        const width = 800 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
 
         // Parse the date / time
         const parseDate = d3.timeParse('%Y-%m-%d'); // Adjust format based on your date format
@@ -173,7 +173,7 @@ export default function Home() {
         svg.append('g')
           .attr('class', 'y-axis')
           .attr('transform', `translate(${width},0)`)
-          .call(d3.axisLeft(y).ticks(10).tickFormat(d => `$${d}`))
+          .call(d3.axisRight(y).ticks(10).tickFormat(d => `${d}`))
           .selectAll('text')
           .style('font-size', '14px')
           .style('fill', '#777');
@@ -250,15 +250,15 @@ export default function Home() {
           // Update tooltip positions and content
           tooltipX
             .style("left", (event.pageX) + "px")
-            .style("top", (height+100) + "px")
+            .style("top", (height+230) + "px")
             .html(`Date: ${d3.timeFormat("%Y-%m-%d")(selectedData.date)}`)
             .transition()
             .duration(50)
             .style("opacity", 1);
 
           tooltipY
-            .style("left", (width+40) + "px")
-            .style("top", (event.pageY) + "px")
+            .style("left", (event.pageX) + "px")
+            .style("top", (height+260) + "px")
             .html(`Count: ${selectedData.count}`)
             .transition()
             .duration(50)
@@ -310,7 +310,7 @@ export default function Home() {
         const slider = sliderBottom<Date>()
           .min(d3.min(formattedData, d => d.date) as Date)
           .max(d3.max(formattedData, d => d.date) as Date)
-          .width(400)
+          .width(300)
           .tickFormat(d3.timeFormat('%Y'))
           .ticks(5)
           .default([d3.min(formattedData, d => d.date) as Date, d3.max(formattedData, d => d.date) as Date])
@@ -340,7 +340,7 @@ export default function Home() {
             svg.select('.y-axis')
               .transition()
               .duration(500)
-              .call(d3.axisLeft(y).ticks(10).tickFormat(d => `$${d}`) as any)
+              .call(d3.axisRight(y).ticks(10).tickFormat(d => `${d}`) as any)
               .selectAll('text')
               .style("font-size", "14px")
               .style("fill", "#777");
