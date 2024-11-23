@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { sliderBottom } from 'd3-simple-slider'; // Import the slider module
 import './page.css';
-import { Button, Form, Input, Select, Space } from 'antd';
+import { Button, Form, Input, Select, Space, Table, Divider, Tooltip } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 
 interface DateCount {
   date: string; // Original date string from BigQuery
@@ -28,8 +29,72 @@ export default function Home() {
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const [form] = Form.useForm();
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [data, setData]=useState<DateCount[]>([]);
+  const [TestDate, setTestDate] = useState('2024-10-01');
+  const[testData, setTestData] = useState([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const columns = [
+    {
+      title: 'Health Authority',
+      dataIndex: 'HEALTH_AUTHORITY',
+      key: 'HEALTH_AUTHORITY',
+    },
+    {
+      title: 'City',
+      dataIndex: 'CITY',
+      key: 'CITY',
+    },
+    {
+      title: 'Category',
+      dataIndex: 'CATEGORY',
+      key: 'CATEGORY',
+    },
+    {
+      title: 'Texture',
+      dataIndex: 'TEXTURE',
+      key: 'TEXTURE',
+    },
+    {
+      title: 'Colour',
+      dataIndex: 'COLOUR',
+      key: 'COLOUR',
+    },
+    {
+      title: 'Expected Drug',
+      dataIndex: 'EXPECTED_DRUG',
+      key: 'EXPECTED_DRUG',
+    },
+    {
+      title: 'Substances',
+      dataIndex: 'SUBSTANCES',
+      key: 'SUBSTANCES',
+    },
+  ];
+
+  const handleSearch=async()=>{
+    setLoading(true);
+    try{
+      const response = await fetch( `https://get-date-tests-jotf3wno6q-uc.a.run.app/?test_date=${encodeURIComponent(
+        TestDate
+      )}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const fetchedData = await response.json();
+      const fetchedDataWithKey = fetchedData.map((item: any, index: any)=>({
+        ...item,
+        key: index.toString(),
+      }));
+      setTestData(fetchedDataWithKey);
+    } catch(error){
+      console.error('Error fetching table data:', error);
+    } finally{
+      setLoading(false);
+    }
+  }
+  
 
   const onFinish = (values: any)=>{
     const category = values.Category;
@@ -69,7 +134,7 @@ export default function Home() {
         if(category&&category!='All'){
           url=`https://get-category-count-jotf3wno6q-uc.a.run.app/?category=${encodeURIComponent(category)}`;
         }else{
-          let url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
+          url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
         }
         const response = await fetch(url);
         if (!response.ok) {
@@ -215,14 +280,7 @@ export default function Home() {
           .style("pointer-events", "none")
           .style("opacity", 0);
 
-        // Add overlay for capturing mouse movements
-        svg.append("rect")
-          .attr("width", width)
-          .attr("height", height)
-          .style("fill", "none")
-          .style("pointer-events", "all")
-          .on("mousemove", mousemove)
-          .on("mouseout", mouseout);
+
 
         // Define the lines for tooltips
         const tooltipLineX = svg.append("line")
@@ -239,6 +297,27 @@ export default function Home() {
           .attr("stroke-dasharray", "4")
           .style("opacity", 0);
 
+        // Add overlay for capturing mouse movements
+        svg.append("rect")
+          .attr("width", width)
+          .attr("height", height)
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .on("click", handleClick)
+          .on("mousemove", mousemove)
+          .on("mouseleave", mouseleave);
+        
+        //Function to handle click
+        function handleClick(event: any){
+          const mouse = d3.pointer(event);
+          const mouseDate = x.invert(mouse[0]);
+          const bisect = d3.bisector((d: any) => d.date).left;
+          const idx = bisect(formattedData, mouseDate);
+          const selectedData = formattedData[idx - 1] || formattedData[idx];
+          const dateStr=d3.timeFormat("%Y-%m-%d")(selectedData.date);
+          setTestDate(dateStr);
+        }
+
         // Function to handle mouse movements
         function mousemove(event: any) {
           const mouse = d3.pointer(event);
@@ -246,22 +325,21 @@ export default function Home() {
           const bisect = d3.bisector((d: any) => d.date).left;
           const idx = bisect(formattedData, mouseDate);
           const selectedData = formattedData[idx - 1] || formattedData[0];
-
+          const dateStr=d3.timeFormat("%Y-%m-%d")(selectedData.date);
+          
           // Update tooltip positions and content
           tooltipX
             .style("left", (event.pageX) + "px")
             .style("top", (height+230) + "px")
-            .html(`Date: ${d3.timeFormat("%Y-%m-%d")(selectedData.date)}`)
-            .transition()
-            .duration(50)
+            .html(`Date: ${dateStr}`)
+            
             .style("opacity", 1);
 
           tooltipY
             .style("left", (event.pageX) + "px")
             .style("top", (height+260) + "px")
             .html(`Count: ${selectedData.count}`)
-            .transition()
-            .duration(50)
+            
             .style("opacity", 1);
 
           // Update tooltip lines
@@ -270,8 +348,7 @@ export default function Home() {
             .attr("x2", x(selectedData.date))
             .attr("y1", 0)
             .attr("y2", height)
-            .transition()
-            .duration(200)
+           
             .style("opacity", 1);
 
           tooltipLineY
@@ -279,27 +356,22 @@ export default function Home() {
             .attr("x2", width)
             .attr("y1", y(selectedData.count))
             .attr("y2", y(selectedData.count))
-            .transition()
-            .duration(200)
+          
             .style("opacity", 1);
         }
 
         // Function to handle mouse out
-        function mouseout() {
-          tooltipX.transition()
-            .duration(500)
+        function mouseleave() {
+          tooltipX
             .style("opacity", 0);
 
-          tooltipY.transition()
-            .duration(500)
+          tooltipY
             .style("opacity", 0);
 
-          tooltipLineX.transition()
-            .duration(500)
+          tooltipLineX
             .style("opacity", 0);
 
-          tooltipLineY.transition()
-            .duration(500)
+          tooltipLineY
             .style("opacity", 0);
         }
 
@@ -385,6 +457,7 @@ export default function Home() {
   }, [data]); 
 
   return (
+    <div>
     <div id="main-container">
       <div ref={d3Container} id="chart-container"></div>
       <div id="right-container">
@@ -417,6 +490,23 @@ export default function Home() {
         </div>
         <div id="slider-container" ref={sliderContainer}></div>
       </div>
+      
+    </div>
+    <div id='table-container'>
+      <p>To search tests information, locate a date and click on the graph, then click the search button<br/><br/></p>
+      <div id="search-controls">
+        <b> Search tests on {TestDate}</b>
+        <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+              Search
+        </Button>
+      </div>
+      
+      <Table 
+      dataSource={testData} 
+      columns={columns}
+      loading={loading}></Table>
+      
+    </div>
     </div>
   );
 }

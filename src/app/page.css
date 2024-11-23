@@ -47,6 +47,29 @@
 
     /* Remove margin-left if present */
   }
+
+  /* Styles for the table container */
+#table-container {
+  margin-top: 20px; /* Add space above the table container */
+}
+
+#table-container p{
+  margin-left: 20px; /* Add space above the table container */
+}
+
+/* New styles for search-controls */
+#search-controls {
+  display: flex;
+  align-items: center;
+  margin-left: 50px;
+  margin-bottom: 20px;
+}
+
+#search-controls b {
+  margin: 0;
+  margin-right: 30px; /* Space between text and button */
+  font-size: large
+}
   
   /* Media queries for responsiveness */
   @media screen and (max-width: 1200px) {
