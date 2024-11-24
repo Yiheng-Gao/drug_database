@@ -3,17 +3,26 @@
 import React from 'react';
 import {Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
+import Link from 'next/link';
 
 const { Header} = Layout;
 
 const items: MenuProps['items'] = [
   {
     key: '1',
-    label: 'Test Counts Analysis',
+    label: (
+      <Link href="/">
+        Test Counts Analysis
+      </Link>
+    ),
   },
   {
     key: '2',
-    label: 'Adulterants Analysis',
+    label: (
+      <Link href="/adulterants">
+        Adulterants Analysis
+      </Link>
+    ),
   },
 ]
 
