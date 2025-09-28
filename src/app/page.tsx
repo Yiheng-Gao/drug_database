@@ -35,6 +35,14 @@ export default function Home() {
   const[testData, setTestData] = useState([]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const [filters, setFilters] = useState<{
+  Category?: string;
+  City?: string;
+  HealthAuthority?: string;
+  ExpectedDrug?: string;
+} | null>(null);
+
+
   const columns = [
     {
       title: 'Health Authority',
@@ -73,35 +81,53 @@ export default function Home() {
     },
   ];
 
-  const handleSearch=async()=>{
-    setLoading(true);
-    try{
-      const response = await fetch( `https://get-date-tests-jotf3wno6q-uc.a.run.app/?test_date=${encodeURIComponent(
-        TestDate
-      )}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const fetchedData = await response.json();
-      const fetchedDataWithKey = fetchedData.map((item: any, index: any)=>({
-        ...item,
-        key: index.toString(),
-      }));
-      setTestData(fetchedDataWithKey);
-    } catch(error){
-      console.error('Error fetching table data:', error);
-    } finally{
-      setLoading(false);
+  const handleSearch = async () => {
+  setLoading(true);
+  try {
+    const body: any = { test_date: TestDate };
+
+    if (filters) {
+      if (filters.Category && filters.Category !== "All") body.Category = filters.Category;
+      if (filters.City && filters.City !== "All City") body.City = filters.City;
+      if (filters.HealthAuthority && filters.HealthAuthority !== "All Authority") body.HealthAuthority = filters.HealthAuthority;
+      if (filters.ExpectedDrug && filters.ExpectedDrug !== "All Drugs") body.ExpectedDrug = filters.ExpectedDrug;
     }
+
+    const response = await fetch(`https://get-date-tests-jotf3wno6q-uc.a.run.app`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const fetchedData = await response.json();
+    const fetchedDataWithKey = fetchedData.map((item: any, idx: number) => ({
+      ...item,
+      key: idx.toString(),
+    }));
+    setTestData(fetchedDataWithKey);
+  } catch (error) {
+    console.error("Error fetching table data:", error);
+  } finally {
+    setLoading(false);
   }
+};
+
   
 
-  const onFinish = (values: any)=>{
-    const category = values.Category;
-    if(category){
-      setSelectedCategory(category);
-    }
-  }
+const onFinish = (values: any) => {
+  // values will be something like { Category: "...", City: "...", "Health Authority": "...", "Expected Drug": "..." }
+  // Normalize names so they match what your backend expects:
+  const payload = {
+    Category: values.Category,
+    City: values.City,
+    HealthAuthority: values["Health Authority"],
+    ExpectedDrug: values["Expected Drug"],
+  };
+  setFilters(payload);
+};
+
 
   // const onCategoryChange = (value: string) => {
   //   switch (value) {
@@ -126,39 +152,56 @@ export default function Home() {
       return;
     }
 
-    // Define an async function to fetch and render data
-    const fetchData = async (category: string | null) => {
-      try {
-        // Fetch data from the provided URL
-        let url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
-        if(category&&category!='All'){
-          url=`https://get-category-count-jotf3wno6q-uc.a.run.app/?category=${encodeURIComponent(category)}`;
-        }else{
-          url = 'https://get-date-count-jotf3wno6q-uc.a.run.app'
-        }
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const fetchedData: DateCount[] = await response.json();
+    // This effect runs whenever filters changes
+  const fetchData = async (filt: typeof filters) => {
+    try {
+      let url = 'https://get-filtered-count-jotf3wno6q-uc.a.run.app';  // your “new firebase function link”
+      const body: any = {};
 
-        if (!fetchedData || fetchedData.length === 0) {
-          console.error('No data received from the Cloud Function.');
-          return;
+      // Only include in body those filters that are meaningful (not “All” or undefined)
+      if (filt) {
+        if (filt.Category && filt.Category !== "All") {
+          body.Category = filt.Category;
         }
-        setData(fetchedData);
+        if (filt.City && filt.City !== "All City") {
+          body.City = filt.City;
+        }
+        if (filt.HealthAuthority && filt.HealthAuthority !== "All Authority") {
+          body.HealthAuthority = filt.HealthAuthority;
+        }
+        if (filt.ExpectedDrug && filt.ExpectedDrug !== "All Drugs") {
+          body.ExpectedDrug = filt.ExpectedDrug;
+        }
       }
-      catch (error) {
-        console.error('Error fetching or rendering data:', error);
-      }
-    };
 
-    if(selectedCategory!==null){
-      fetchData(selectedCategory);
-    }else{
-      fetchData(null);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const fetchedData: DateCount[] = await response.json();
+
+      if (!fetchedData || fetchedData.length === 0) {
+        console.warn("No data returned from backend");
+        setData([]);  // clear or fallback
+        return;
+      }
+      setData(fetchedData);
+    } catch (error) {
+      console.error("Error fetching filtered data:", error);
+      setData([]);
     }
-  },[selectedCategory]);
+  };
+
+  // Invoke fetch
+  fetchData(filters ?? {}); // If filters is null, send empty object (fetch unfiltered)
+}, [filters]);
 
   useEffect(()=>{
     if(!data||data.length===0) return;
@@ -466,7 +509,7 @@ export default function Home() {
             {...layout}
             form={form}
             name="control-hooks"
-            style={{ maxWidth: 400 }}
+            style={{ maxWidth: 600 }}
             onFinish={onFinish}
           >
             <Form.Item name="Category" label="Category" rules={[{ required: true }]}>
@@ -478,7 +521,51 @@ export default function Home() {
                 <Option value="Stimulant">Stimulant</Option>
                 <Option value="All">All Category</Option>
               </Select>
+              
             </Form.Item>
+
+            <Form.Item name="City" label="City" rules={[{ required: true }]}>
+              <Select
+                placeholder="Select an option"
+                allowClear
+              >
+                <Option value="Vancouver">Vancouver</Option>
+                <Option value="Nanaimo">Nanaimo</Option>
+                <Option value="Surrey">Surrey</Option>
+                <Option value="Chilliwack">Chilliwack</Option>
+                <Option value="All City">All City</Option>
+              </Select>
+              
+            </Form.Item>
+
+            <Form.Item name="Health Authority" label="Health Authority" rules={[{ required: true }]}>
+              <Select
+                placeholder="Select an option"
+                allowClear
+              >
+                <Option value="Vancouver Coastal">Vancouver Coastal</Option>
+                <Option value="Interior Health">Interior Health</Option>
+                <Option value="Fraser Health">Fraser Health</Option>
+                <Option value="Island Health">Island Health</Option>
+                <Option value="All Authority">All Authority</Option>
+              </Select>
+              
+            </Form.Item>
+
+            <Form.Item name="Expected Drug" label="Expected Drug" rules={[{ required: true }]}>
+              <Select
+                placeholder="Select an option"
+                allowClear
+              >
+                <Option value="Fentanyl">Fentanyl</Option>
+                <Option value="Cocaine">Cocaine</Option>
+                <Option value="Methamphetamine">Methamphetamine</Option>
+                <Option value="Heroin">Heroin</Option>
+                <Option value="All Drugs">All Drugs</Option>
+              </Select>
+              
+            </Form.Item>
+
             <Form.Item {...tailLayout}>
               <Space>
                 <Button type="primary" htmlType="submit">

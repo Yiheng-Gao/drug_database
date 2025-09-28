@@ -21,7 +21,7 @@
   }
   
   #right-container {
-    width: 300px; /* Adjust as needed */
+    width: 600px; /* Adjust as needed */
     display: flex;
     flex-direction: column;
     margin-right: 800px; /* Space between right-container and chart */
